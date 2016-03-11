@@ -40,7 +40,7 @@ var (
 func Deposit(amount int) {
     mu.Lock()
     balance = balance + amount
-    mu.Unlock()”
+    mu.Unlock()
 }
 
 func Balance() int {
