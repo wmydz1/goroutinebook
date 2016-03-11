@@ -35,6 +35,9 @@ func Icon(name string) image.Image {
 直觉会告诉我们最差的情况是loadIcons函数被多次访问会带来数据竞争。当第一个goroutine在忙着loading这些icons的时候，另一个goroutine进入
 了Icon函数，发现变量是nil，然后也会调用loadIcons函数。
 
+
+不过这种直觉是错误的。(我们希望现在你从现在开始能够构建自己对并发的直觉，也就是说对并发的直觉总是不能被信任的！)回忆一下9.4节。因为缺少显式的同步，编译器和CPU是可以随意地去更改访问内存的指令顺序，以任意方式，只要保证每一个goroutine自己的执行顺序一致。其中一种可能loadIcons的语句重排是下面这样。它会在填写icons变量的值之前先用一个空map来初始化icons变量
+
 ```
 func loadIcons() {
     icons = make(map[string]image.Image)
