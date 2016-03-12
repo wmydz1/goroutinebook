@@ -65,3 +65,58 @@ func (memo *Memo) Get(key string) (value interface{}, err error) {
 测试依然并发进行，但这回竞争检查器“沉默”了。不幸的是对于Memo的这一点改变使我们完全丧失了并发的性能优点。每次对f的调用期间都会持有锁，
 Get将本来可以并行运行的I/O操作串行化了。我们本章的目的是完成一个无锁缓存，而不是现在这样的将所有请求串行化的函数的缓存。
 
+完整代码
+
+```Go
+
+// Copyright © 2016 Alan A. A. Donovan & Brian W. Kernighan.
+// License: https://creativecommons.org/licenses/by-nc-sa/4.0/
+
+// See page 276.
+
+// Package memo provides a concurrency-safe memoization a function of
+// type Func.  Requests for different keys run concurrently.
+// Concurrent requests for the same key result in duplicate work.
+package memo
+
+import "sync"
+
+type Memo struct {
+	f     Func
+	mu    sync.Mutex // guards cache
+	cache map[string]result
+}
+
+type Func func(string) (interface{}, error)
+
+type result struct {
+	value interface{}
+	err   error
+}
+
+func New(f Func) *Memo {
+	return &Memo{f: f, cache: make(map[string]result)}
+}
+
+//!+
+
+func (memo *Memo) Get(key string) (value interface{}, err error) {
+	memo.mu.Lock()
+	res, ok := memo.cache[key]
+	memo.mu.Unlock()
+	if !ok {
+		res.value, res.err = memo.f(key)
+
+		// Between the two critical sections, several goroutines
+		// may race to compute f(key) and update the map.
+		memo.mu.Lock()
+		memo.cache[key] = res
+		memo.mu.Unlock()
+	}
+	return res.value, res.err
+}
+
+//!-
+
+
+```
