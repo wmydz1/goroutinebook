@@ -111,4 +111,98 @@ goroutien。上述工作是用(*entry).deliver来完成的。对call和deliver�
 这个例子说明我们无论可以用上锁，还是通信来建立并发程序都是可行的。
 上面的两种方案并不好说特定情境下哪种更好，不过了解他们还是有价值的。有时候从一种方式切换到另一种可以使你的代码更为简洁。
 
+完整代码
 
+```
+// Copyright © 2016 Alan A. A. Donovan & Brian W. Kernighan.
+// License: https://creativecommons.org/licenses/by-nc-sa/4.0/
+
+// See page 278.
+
+// Package memo provides a concurrency-safe non-blocking memoization
+// of a function.  Requests for different keys proceed in parallel.
+// Concurrent requests for the same key block until the first completes.
+// This implementation uses a monitor goroutine.
+package memo
+
+//!+Func
+
+// Func is the type of the function to memoize.
+type Func func(key string) (interface{}, error)
+
+// A result is the result of calling a Func.
+type result struct {
+	value interface{}
+	err   error
+}
+
+type entry struct {
+	res   result
+	ready chan struct{} // closed when res is ready
+}
+
+//!-Func
+
+//!+get
+
+// A request is a message requesting that the Func be applied to key.
+type request struct {
+	key      string
+	response chan<- result // the client wants a single result
+}
+
+type Memo struct{ requests chan request }
+
+// New returns a memoization of f.  Clients must subsequently call Close.
+func New(f Func) *Memo {
+	memo := &Memo{requests: make(chan request)}
+	go memo.server(f)
+	return memo
+}
+
+func (memo *Memo) Get(key string) (interface{}, error) {
+	response := make(chan result)
+	memo.requests <- request{key, response}
+	res := <-response
+	return res.value, res.err
+}
+
+func (memo *Memo) Close() { close(memo.requests) }
+
+//!-get
+
+//!+monitor
+
+func (memo *Memo) server(f Func) {
+	cache := make(map[string]*entry)
+	for req := range memo.requests {
+		e := cache[req.key]
+		if e == nil {
+			// This is the first request for this key.
+			e = &entry{ready: make(chan struct{})}
+			cache[req.key] = e
+			go e.call(f, req.key) // call f(key)
+		}
+		go e.deliver(req.response)
+	}
+}
+
+func (e *entry) call(f Func, key string) {
+	// Evaluate the function.
+	e.res.value, e.res.err = f(key)
+	// Broadcast the ready condition.
+	close(e.ready)
+}
+
+func (e *entry) deliver(response chan<- result) {
+	// Wait for the ready condition.
+	<-e.ready
+	// Send the result to the client.
+	response <- e.res
+}
+
+//!-monitor
+
+
+
+```
