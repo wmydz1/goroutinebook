@@ -1,4 +1,4 @@
-```
+
 package time
 
 import (
@@ -267,4 +267,4 @@ func (t *Timer) swap(i, j int) {
 	t.timers[j].index = j
 }
 
-```
+
