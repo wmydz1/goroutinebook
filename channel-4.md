@@ -12,9 +12,6 @@ func printer(in chan int)
 
 这种场景是典型的。当一个channel作为一个函数参数是，它一般总是被专门用于只发送或者只接收。
 
-为了表明这种意图并防止被滥用，Go语言的类型系统提供了单方向的channel类型，分别用于只发送或只接收的channel。类型`chan<- int`表示一个只发送int的channel，只能发送不能接收。相反，类型`<-chan int`表示一个只接收int的channel，只能接收不能发送。（箭头`<-`和关键字chan的相对位置表明了channel的方向。）这种限制将在编译期检测。
-
-因为关闭操作只用于断言不再向channel发送新的数据，所以只有在发送者所在的goroutine才会调用close函数，因此对一个只接收的channel调用close将是一个编译错误。
 
 这是改进的版本，这一次参数使用了单方向channel类型：
 
