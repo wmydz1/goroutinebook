@@ -55,6 +55,24 @@ func (memo *Memo) Close() { close(memo.requests) }
 cache变量被限制在了monitor goroutine (*Memo).server中，下面会看到。monitor会在循环中一直读取请求，直到request channel被Close方法关闭。每一个请求都会去查询cache，如果没有找到条目的话，那么就会创建/插入一个新的条目。
 
 ```
+
+Func、result和entry的声明和之前保持一致：
+
+// Func is the type of the function to memoize.
+type Func func(key string) (interface{}, error)
+
+// A result is the result of calling a Func.
+type result struct {
+    value interface{}
+    err   error
+}
+
+type entry struct {
+    res   result
+    ready chan struct{} // closed when res is ready
+}
+
+
 func (memo *Memo) server(f Func) {
     cache := make(map[string]*entry)
     for req := range memo.requests {
