@@ -35,7 +35,7 @@ func main() {
         defer wg.Done()
         d.test("write")
     }()
-wg.Wait() 
+    wg.Wait() 
 }
 
 ```
@@ -86,8 +86,8 @@ func main() {
     var m sync.Mutex
     m.Lock()
 {
-m.Lock()
-m.Unlock()
+    m.Lock()
+    m.Unlock()
 }
     m.Unlock() 
 }
@@ -108,7 +108,8 @@ func (c *cache) count() int {
     c.Lock()
     n := len(c.data)
     c.Unlock()
-return n }
+    return n 
+}
 func (c *cache) get() int {
     c.Lock()
     defer c.Unlock()
@@ -117,7 +118,8 @@ func (c *cache) get() int {
     d = c.data[0]
         c.data = c.data[1:]
     }
-return d }
+    return d
+}
 func main() {
     c := cache{
         data: []int{1, 2, 3, 4},
