@@ -26,7 +26,7 @@ func (d data) test(s string) {
 func main() {
     var wg sync.WaitGroup
     wg.Add(2)
-var d data
+    var d data
     go func() {
         defer wg.Done()
         d.test("read")
@@ -84,12 +84,12 @@ Mutex 不支持递归锁,即便在同一 goroutine 下也会导致死锁。
 ```
 func main() {
     var m sync.Mutex
-m.Lock()
+    m.Lock()
 {
 m.Lock()
 m.Unlock()
 }
-m.Unlock() 
+    m.Unlock() 
 }
 
 ```
@@ -113,8 +113,8 @@ func (c *cache) get() int {
     c.Lock()
     defer c.Unlock()
     var d int
-    if n := c.count(); n > 0 {
-d = c.data[0]
+    if n := c.count(); n > 0 { // count 重复锁定，造成死锁
+    d = c.data[0]
         c.data = c.data[1:]
     }
 return d }
